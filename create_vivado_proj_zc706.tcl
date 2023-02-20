@@ -71,14 +71,22 @@ regenerate_bd_layout
 save_bd_design
 
 #Generate the wrapper
-#make_wrapper -files [get_files ${BD_name}.bd] -top
+make_wrapper -files [get_files ${BD_name}.bd] -top
 
 # Add the wrapper to the fileset
-#set obj [get_filesets sources_1]
-#set files [list "[file normalize [glob "./$project_name/$project_name.srcs/sources_1/bd/$BD_name/hdl/${BD_name}_wrapper.v"]]"]
-#add_files -norecurse -fileset $obj $files
+set obj [get_filesets sources_1]
+set files [list "[file normalize [glob "./$project_name/$project_name.srcs/sources_1/bd/$BD_name/hdl/${BD_name}_wrapper.v"]]"]
+add_files -norecurse -fileset $obj $files
 
 # Generate the output products
-#generate_target all [get_files ./$project_name/$project_name.srcs/sources_1/bd/$BD_name/${BD_name}.bd]
-#create_ip_run [get_files -of_objects [get_fileset sources_1] ./$project_name/$project_name.srcs/sources_1/bd/$BD_name/${BD_name}.bd]
-#launch_runs -jobs 8 [get_runs $BD_name*synth_1]
+generate_target all [get_files ./$project_name/$project_name.srcs/sources_1/bd/$BD_name/${BD_name}.bd]
+create_ip_run [get_files -of_objects [get_fileset sources_1] ./$project_name/$project_name.srcs/sources_1/bd/$BD_name/${BD_name}.bd]
+launch_runs -jobs 8 [get_runs $BD_name*synth_1]
+
+# Run Synthesis, implementation and generate bitstream
+launch_runs impl_1 -to_step write_bitstream -jobs 8
+wait_on_run impl_1
+
+#Export to SDK
+file mkdir ./$project_name/${project_name}.sdk
+file copy -force ./$project_name/${project_name}.runs/impl_1/ZC706_HDMI_wrapper.sysdef ./sdk_export/ZC706_HDMI_wrapper.hdf
