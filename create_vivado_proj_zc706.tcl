@@ -36,34 +36,34 @@ if {[string equal [get_filesets -quiet sources_1] ""]} {
   create_fileset -srcset sources_1
 }
 # Add hdl files
-#add_files -fileset sources_1 -norecurse -scan_for_includes ./src/hdl
-#import_files -fileset sources_1 -norecurse ./src/hdl
+#add_files -fileset sources_1 -norecurse -scan_for_includes ./src_hw/hdl
+#import_files -fileset sources_1 -norecurse ./src_hw/hdl
 
 # Create 'constrs_1' fileset (if not found)
 if {[string equal [get_filesets -quiet constrs_1] ""]} {
   create_fileset -constrset -quiet constrs_1
 }
 # Add constraint files
-add_files -fileset constrs_1 -norecurse -scan_for_includes ./src/constr
-import_files -fileset constrs_1 -norecurse ./src/constr
+add_files -fileset constrs_1 -norecurse -scan_for_includes ./src_hw/constr
+import_files -fileset constrs_1 -norecurse ./src_hw/constr
 
 # Create 'sim_1' fileset (if not found)
 if {[string equal [get_filesets -quiet sim_1] ""]} {
   create_fileset -simset sim_1
 }
 # Add simulation files
-add_files -fileset sim_1 -norecurse -scan_for_includes ./src/sim
-import_files -fileset sim_1 -norecurse ./src/sim
+add_files -fileset sim_1 -norecurse -scan_for_includes ./src_hw/sim
+import_files -fileset sim_1 -norecurse ./src_hw/sim
 
 
 # Add ip repository
-#set_property  ip_repo_paths  ./src/ip_repo [current_project]
+#set_property  ip_repo_paths  ./src_hw/ip_repo [current_project]
 #update_ip_catalog
 
 set design_name 	$BD_name
 
 # Build the Block Design
-source ./src/tcl/bd.tcl
+source ./src_hw/tcl/bd.tcl
 
 # Validate the BD
 regenerate_bd_layout
