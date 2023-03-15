@@ -53,16 +53,24 @@
 #include "xv_tpg.h"
 #include "zc706_hw.h"
 
+#include "xvtc.h"
+#include "xclk_wiz.h"
+
 XIicPs IicPs_inst;
 XV_tpg tpg_inst;
 XV_tpg_Config *tpg_config;
+
+XVtc VtcInst;
+XVtc_Timing XVtc_Timingconf, XVtc_Timingconf1;
+
+XClk_Wiz ClkWizInst;
 
 int main()
 {
 	int Status;
     init_platform();
 
-    print("TPG application on ZC702 using on-board HDMI\n\r");
+    print("TPG application on ZC706 using on-board HDMI\n\r");
 
     //Configure the PS IIC Controller
     ps_iic_init(XPAR_XIICPS_0_DEVICE_ID, &IicPs_inst);
@@ -88,6 +96,17 @@ int main()
             return(XST_FAILURE);
     }
 
+    //Initialize the clocking wizard
+    XClk_Wiz_Config *ClkWiz_CfgPtr = XClk_Wiz_LookupConfig(XPAR_CLK_WIZ_0_DEVICE_ID);
+    XClk_Wiz_CfgInitialize(&ClkWizInst, ClkWiz_CfgPtr, ClkWiz_CfgPtr->BaseAddr);
+
+	/* Clocking Wizard Configuration */
+    Xil_Out32(ClkWiz_CfgPtr->BaseAddr + 0x208, 0x001A);
+    Xil_Out32(ClkWiz_CfgPtr->BaseAddr + 0x25C, 0x3);
+
+	/* End of clocking wizard configuration */
+
+
     // Set Resolution to 800x600
     XV_tpg_Set_height(&tpg_inst, 600);
     XV_tpg_Set_width(&tpg_inst, 800);
@@ -96,13 +115,13 @@ int main()
     XV_tpg_Set_colorFormat(&tpg_inst, 0x1);
 
     // Change the pattern to color bar
-    XV_tpg_Set_bckgndId(&tpg_inst, XTPG_BKGND_COLOR_BARS);
+    XV_tpg_Set_bckgndId(&tpg_inst, XTPG_BKGND_RAINBOW_COLOR);
 
     // Set Overlay to moving box
     // Set the size of the box
-    XV_tpg_Set_boxSize(&tpg_inst, 50);
+    XV_tpg_Set_boxSize(&tpg_inst, 10);
     // Set the speed of the box
-    XV_tpg_Set_motionSpeed(&tpg_inst, 5);
+    XV_tpg_Set_motionSpeed(&tpg_inst, 2);
     // Enable the moving box
     XV_tpg_Set_ovrlayId(&tpg_inst, 1);
 
@@ -112,6 +131,26 @@ int main()
     xil_printf("TPG started!\r\n");
 
     /* End of TPG code*/
+
+
+    // Initialise the VTC
+    XVtc_Config *VTC_Config = XVtc_LookupConfig(XPAR_V_TC_0_DEVICE_ID);
+    XVtc_CfgInitialize(&VtcInst, VTC_Config, VTC_Config->BaseAddress);
+
+	/* VTC Configuration */
+    XVtc_ConvVideoMode2Timing(&VtcInst,XVTC_VMODE_SVGA,&XVtc_Timingconf);
+    XVtc_SetGeneratorTiming(&VtcInst, &XVtc_Timingconf);
+    XVtc_RegUpdate(&VtcInst);
+    //uint16_t aa = XVtc_GetGeneratorVideoMode(&VtcInst);
+    //XVtc_SetGeneratorVideoMode(&VtcInst, XVTC_VMODE_SVGA);
+    //XVtc_GetGeneratorTiming(&VtcInst, &XVtc_Timingconf1);
+    //XVtc_SetGeneratorTiming(&VtcInst, &XVtc_Timingconf);
+    //XVtc_RegUpdate(&VtcInst);
+
+	/* End of VTC Configuration */
+
+    //Start the VTC generator
+    XVtc_EnableGenerator(&VtcInst);
 
 	while(1);
 
