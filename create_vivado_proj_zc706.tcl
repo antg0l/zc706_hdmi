@@ -47,15 +47,6 @@ if {[string equal [get_filesets -quiet constrs_1] ""]} {
 add_files -fileset constrs_1 -norecurse -scan_for_includes ./src_hw/constr
 import_files -fileset constrs_1 -norecurse ./src_hw/constr
 
-# Create 'sim_1' fileset (if not found)
-if {[string equal [get_filesets -quiet sim_1] ""]} {
-  create_fileset -simset sim_1
-}
-# Add simulation files
-add_files -fileset sim_1 -norecurse -scan_for_includes ./src_hw/sim
-import_files -fileset sim_1 -norecurse ./src_hw/sim
-
-
 # Add ip repository
 #set_property  ip_repo_paths  ./src_hw/ip_repo [current_project]
 #update_ip_catalog
