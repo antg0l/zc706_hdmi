@@ -65,10 +65,77 @@ XVtc_Timing XVtc_Timingconf, XVtc_Timingconf1;
 
 XClk_Wiz ClkWizInst;
 
+u16 video_mode = 1; //0 - 800x600, 1 - 1024x768
+u32 tpg_height,tpg_width, clk_div;
+u16 VTC_mode;
+
 int main()
 {
 	int Status;
     init_platform();
+
+    // set variables for selected mode:
+    switch(video_mode)
+    	{
+    	case 0: // 800x600
+    	{
+    		// for TPG
+    		tpg_height  = 600;
+    		tpg_width  = 800;
+
+    		// For the clocking wizard
+    		clk_div = 0x001A; //x1A = 26 for 40MHz (800x600)
+
+    		// For VTC
+    		VTC_mode = XVTC_VMODE_SVGA;
+
+    		break;
+    	}
+    	case 1: // 1024x768
+    	{
+    		// for TPG
+    		tpg_height  = 768;
+    		tpg_width  = 1024;
+
+    		// For the clocking wizard
+    		clk_div = 0x0010; //x10 = 16 for 65MHz (1024x768)
+
+    		// For VTC
+    		VTC_mode = XVTC_VMODE_XGA;
+
+    		break;
+    	}
+    	case 2: // 1280x720 -- not working
+    	{
+    		// for TPG
+    		tpg_height  = 720;
+    		tpg_width  = 1280;
+
+    		// For the clocking wizard
+    		clk_div = 0x000D; //xE = 14 for 74.25MHz (1280x720)
+
+    		// For VTC
+    		VTC_mode = XVTC_VMODE_720P;
+
+    		break;
+    	}
+    	case 3: // 640x480
+    	{
+    		// for TPG
+    		tpg_height  = 480;
+    		tpg_width  = 640;
+
+    		// For the clocking wizard
+    		clk_div = 0x0028; //x29 = 41
+
+    		// For VTC
+    		VTC_mode = XVTC_VMODE_VGA;
+
+    		break;
+    	}
+    	// add other video formats here
+    	}
+
 
     print("TPG application on ZC706 using on-board HDMI\n\r");
 
@@ -95,24 +162,34 @@ int main()
             xil_printf("TPG configuration failed\r\n");
             return(XST_FAILURE);
     }
+    // Initialise the VTC
+    XVtc_Config *VTC_Config = XVtc_LookupConfig(XPAR_V_TC_0_DEVICE_ID);
+    XVtc_CfgInitialize(&VtcInst, VTC_Config, VTC_Config->BaseAddress);
+
+    //XVtc_DisableGenerator(&VtcInst);
 
     //Initialize the clocking wizard
     XClk_Wiz_Config *ClkWiz_CfgPtr = XClk_Wiz_LookupConfig(XPAR_CLK_WIZ_0_DEVICE_ID);
     XClk_Wiz_CfgInitialize(&ClkWizInst, ClkWiz_CfgPtr, ClkWiz_CfgPtr->BaseAddr);
 
 	/* Clocking Wizard Configuration */
-    Xil_Out32(ClkWiz_CfgPtr->BaseAddr + 0x208, 0x001A);
+    Xil_Out32(ClkWiz_CfgPtr->BaseAddr + 0x208, clk_div); //x1A = 26 for 40MHz (800x600),
+    //Xil_Out32(ClkWiz_CfgPtr->BaseAddr + 0x208, 0x0010);   //x10 = 16 for 65MHz (1024x768)
     Xil_Out32(ClkWiz_CfgPtr->BaseAddr + 0x25C, 0x3);
 
 	/* End of clocking wizard configuration */
+    usleep(10);
 
 
     // Set Resolution to 800x600
-    XV_tpg_Set_height(&tpg_inst, 600);
-    XV_tpg_Set_width(&tpg_inst, 800);
+    XV_tpg_Set_height(&tpg_inst, tpg_height);
+    XV_tpg_Set_width(&tpg_inst, tpg_width);
+    //XV_tpg_Set_height(&tpg_inst, 768);
+    //XV_tpg_Set_width(&tpg_inst, 1024);
 
     // Set Color Space to YUV422
     XV_tpg_Set_colorFormat(&tpg_inst, 0x1);
+    //XV_tpg_Set_colorFormat(&tpg_inst, 0x2);
 
     // Change the pattern to color bar
     XV_tpg_Set_bckgndId(&tpg_inst, XTPG_BKGND_RAINBOW_COLOR);
@@ -134,13 +211,17 @@ int main()
 
 
     // Initialise the VTC
-    XVtc_Config *VTC_Config = XVtc_LookupConfig(XPAR_V_TC_0_DEVICE_ID);
-    XVtc_CfgInitialize(&VtcInst, VTC_Config, VTC_Config->BaseAddress);
+    //XVtc_Config *VTC_Config = XVtc_LookupConfig(XPAR_V_TC_0_DEVICE_ID);
+    //XVtc_CfgInitialize(&VtcInst, VTC_Config, VTC_Config->BaseAddress);
 
 	/* VTC Configuration */
-    XVtc_ConvVideoMode2Timing(&VtcInst,XVTC_VMODE_SVGA,&XVtc_Timingconf);
+    XVtc_ConvVideoMode2Timing(&VtcInst,VTC_mode,&XVtc_Timingconf);
+    //XVtc_ConvVideoMode2Timing(&VtcInst,XVTC_VMODE_XGA ,&XVtc_Timingconf);
     XVtc_SetGeneratorTiming(&VtcInst, &XVtc_Timingconf);
     XVtc_RegUpdate(&VtcInst);
+
+
+
     //uint16_t aa = XVtc_GetGeneratorVideoMode(&VtcInst);
     //XVtc_SetGeneratorVideoMode(&VtcInst, XVTC_VMODE_SVGA);
     //XVtc_GetGeneratorTiming(&VtcInst, &XVtc_Timingconf1);
